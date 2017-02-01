@@ -26,6 +26,13 @@ class Service_Manager implements Service_Manager_Interface {
     protected $allow_override;
 
     /**
+     * Service manager that will be inserted into the factory when creating object
+     *
+     * @var Service_Manager_Interface
+     */
+    protected $creation_service_manager;
+
+    /**
      * A list of aliases
      *
      * @var Config_Interface
@@ -56,11 +63,14 @@ class Service_Manager implements Service_Manager_Interface {
     /**
      * Constructor
      *
-     * @param Config_Interface $config
-     * @param string $allow_override can_override || can_not_override
+     * @param  Config_Interface $config
+     * @param  string $allow_override can_override || can_not_override
+     * @param  Service_Manager_Interface $creation_service_manager
+     * @return void
      */
-    public function __construct( Config_Interface $config = null, string $allow_override = 'can_not_override' ) {
+    public function __construct( Config_Interface $config = null, string $allow_override = 'can_not_override', Service_Manager_Interface $creation_service_manager = null ) {
         $this->allow_override = $allow_override;
+        $this->creation_service_manager = $creation_service_manager instanceof Service_Manager_Interface ? $creation_service_manager : $this;
 
         $this->aliases = new Config( [], 'read_and_write' );
         $this->factories = new Config( [], 'read_and_write' );
@@ -237,7 +247,7 @@ class Service_Manager implements Service_Manager_Interface {
      */
     private function create_service_object( string $service_name, array $options = null ) {
         $factory = $this->get_service_factory( $service_name );
-        return $factory( $this, $service_name, $options );
+        return $factory( $this->creation_service_manager, $service_name, $options );
     }
 
     /**

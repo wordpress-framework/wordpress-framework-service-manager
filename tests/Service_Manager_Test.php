@@ -57,6 +57,18 @@ class Service_Manager_Test extends TestCase {
         $this->assertTrue( $shared_by_default->getValue( $service_manager ) );
     }
 
+    public function test_construct_with_creation_service_manager() {
+        $service_manager_reflection = new ReflectionClass( Service_Manager::class );
+        $creation_service_manager_property = $service_manager_reflection->getProperty( 'creation_service_manager' );
+        $creation_service_manager_property->setAccessible( true );
+
+        $service_manager = new Service_Manager( $this->config );
+        $this->assertSame( $service_manager, $creation_service_manager_property->getValue( $service_manager ) );
+
+        $child_service_manager = new Service_Manager( new Config(), 'can_override', $service_manager );
+        $this->assertSame( $service_manager, $creation_service_manager_property->getValue( $child_service_manager ) );
+    }
+
     public function test_get_service_factory() {
         $service_manager = new Service_Manager( $this->config );
 
@@ -74,7 +86,6 @@ class Service_Manager_Test extends TestCase {
         $this->assertInstanceOf( Test_Factory_One::class, $factories_property->getValue( $service_manager )->get( Test_Object_One::class ) );
         $this->assertInstanceOf( Test_Factory_Two::class, $factories_property->getValue( $service_manager )->get( 'test_factory' ) );
         $this->assertInstanceOf( Default_Factory::class, $factories_property->getValue( $service_manager )->get( Test_Object_Two::class ) );
-
     }
 
     /**
@@ -90,6 +101,25 @@ class Service_Manager_Test extends TestCase {
         $this->assertInstanceOf( Test_Object_One::class, $create_service_object_method->invokeArgs( $service_manager, [Test_Object_One::class] ) );
         $this->assertInstanceOf( Test_Object_One::class, $create_service_object_method->invokeArgs( $service_manager, ['test_factory'] ) );
         $this->assertInstanceOf( Test_Object_Two::class, $create_service_object_method->invokeArgs( $service_manager, [Test_Object_Two::class] ) );
+    }
+
+    /**
+     * @depends test_get_service_factory
+     */
+    public function test_create_service_object_with_other_creation_service_manager() {
+
+        $creation_service_manager = new Service_Manager( $this->config );
+        $service_manager = new Service_Manager( $this->config, 'can_not_override', $creation_service_manager );
+
+        $service_manager_reflection = new ReflectionClass( Service_Manager::class );
+        $create_service_object_method = $service_manager_reflection->getMethod( 'create_service_object' );
+        $create_service_object_method->setAccessible( true );
+
+        $object = $create_service_object_method->invokeArgs( $creation_service_manager, [Test_Object_One::class] );
+        $this->assertSame( $creation_service_manager, $object->service_manager );
+
+        $object = $create_service_object_method->invokeArgs( $service_manager, [Test_Object_One::class] );
+        $this->assertSame( $creation_service_manager, $object->service_manager );
     }
 
     /**

@@ -11,6 +11,6 @@ final class Test_Factory_Two implements Factory_Interface {
      * @inheritDoc
      */
     public function __invoke( Service_Manager_Interface $service_manager, string $requested_name, array $options = null ) {
-        return new Test_Object_One( ['test_option' => 'option_value_added_by_test_factory_two'] );
+        return new Test_Object_One( ['test_option' => 'option_value_added_by_test_factory_two'], $service_manager );
     }
 }
